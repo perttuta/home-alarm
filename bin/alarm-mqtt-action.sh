@@ -1,4 +1,4 @@
-k#!/bin/bash
+#!/bin/bash
 
 ALARM_VIDEO_DIR=/var/cache/alarm-video
 FILE_NAME_ALARM=current-alarm
