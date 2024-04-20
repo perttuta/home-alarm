@@ -41,7 +41,6 @@ do_work() {
 do_work_throttled() {
     CURRENT_TIME=$(date +%s )
     if [ "$((CURRENT_TIME - LAST_ACTION_TIME))" -ge "$DELAY" ]; then
-        echo 'Doing work'
         calculate_backoff # wait some time before doing more work
         LAST_ACTION_TIME="$CURRENT_TIME"
         do_work
@@ -54,7 +53,6 @@ while true  # Keep an infinite loop to reconnect when connection lost/broker una
 do
     mosquitto_sub -h mqtt.home -u $ENV_MQTT_USERNAME -P $ENV_MQTT_PASSWORD -t etuovi-person | while read -r payload
     do
-        echo $payload $DELAY    
         check_reset_interval
         do_work_throttled
     done
