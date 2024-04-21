@@ -6,8 +6,8 @@ FILE_EXTENSION_ALARM=.mp4
 
 while true
 do
-    echo "looking for file"
     if [ -e "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # if first alarm file is found, do work
+        echo $(date) Publishing new alarm
         # fetch snapshot from camera
         curl --insecure "https://etuovi.home/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=$ENV_CAMERA_USERNAME_ETUOVI&password=$ENV_CAMERA_PASSWORD_ETUOVI" -o "$ALARM_VIDEO_DIR/etuovi.jpg"
         # send it via Telegram
