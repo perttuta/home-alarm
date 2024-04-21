@@ -31,6 +31,7 @@ check_reset_interval() {
 
 do_work() {
     if ! [ -e "$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
+        echo $(date) Creating alarm
         # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
         latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "out*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
         cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
@@ -53,6 +54,7 @@ while true  # Keep an infinite loop to reconnect when connection lost/broker una
 do
     mosquitto_sub -h mqtt.home -u $ENV_MQTT_USERNAME -P $ENV_MQTT_PASSWORD -t etuovi-person | while read -r payload
     do
+        echo $(date) Processing received message
         check_reset_interval
         do_work_throttled
     done
