@@ -1,4 +1,4 @@
-Test
 
 # home-alarm
-ONVIF / MQTT / S3 alarm video storage with phone notification
+
+ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification. Works with Reolink-820A.
