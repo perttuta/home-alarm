@@ -4,7 +4,7 @@ ALARM_VIDEO_DIR=/var/cache/alarm-video
 FILE_NAME_ALARM=current-alarm
 FILE_EXTENSION_ALARM=.mp4
 # initial delay in seconds
-INITIAL_DELAY=$((60 * 3)) # 3 min
+INITIAL_DELAY=$((60 * 1)) # 1 min
 
 DELAY=0
 MAX_DELAY=$((60 * 15)) # maximum delay
