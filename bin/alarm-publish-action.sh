@@ -26,10 +26,11 @@ do
         # set to expire after one week
         SIGNED_URL1=$(aws --profile alarm-video-s3 s3 presign "$TARGET_S3_URL1" --expires-in 604800)
         SIGNED_URL2=$(aws --profile alarm-video-s3 s3 presign "$TARGET_S3_URL2" --expires-in 604800)
+        ESCAPED_URL1=$(echo -n "$SIGNED_URL1" | jq -s -R -r @uri)
+        ESCAPED_URL2=$(echo -n "$SIGNED_URL2" | jq -s -R -r @uri)
 
-        # TODO: send URL to telegram
-        #curl --silent 'https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$SIGNED_URL1'
-        #curl --silent 'https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$SIGNED_URL2'
+        curl --silent "https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$ESCAPED_URL1"
+        curl --silent "https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$ESCAPED_URL2"
 
         rm "$FILE1"
         rm "$FILE2"
