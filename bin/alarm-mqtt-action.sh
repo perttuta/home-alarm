@@ -34,6 +34,10 @@ do_work() {
         echo $(date) Creating alarm
         # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
         latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "out*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
+        # Make a snapshot photo, which will be sent to Telegram as is
+        curl --silent --insecure "https://etuovi.home/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=$ENV_CAMERA_USERNAME_ETUOVI&password=$ENV_CAMERA_PASSWORD_ETUOVI" -o "$ALARM_VIDEO_DIR/etuovi.jpg"
+        # sleep a while to get complete video files
+        sleep 10
         cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
         cp "${latest_files[1]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
     fi

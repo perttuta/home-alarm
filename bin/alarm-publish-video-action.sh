@@ -14,12 +14,7 @@ TARGET_S3_URL2="s3://halyvideo/etuovi/$TARGET_FILE_PREFIX-2$FILE_EXTENSION_ALARM
 while true
 do
     if [ -e "$FILE1" ]; then # if first alarm file is found, do work
-        echo -e "\n"$(date)" Publishing new alarm"
-        # fetch snapshot from camera
-        curl --silent --insecure "https://etuovi.home/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=$ENV_CAMERA_USERNAME_ETUOVI&password=$ENV_CAMERA_PASSWORD_ETUOVI" -o "$ALARM_VIDEO_DIR/etuovi.jpg"
-        # send it via Telegram
-        curl --silent -X POST -H "Content-Type:multipart/form-data" -F "chat_id=$ENV_TG_CHAT_ID" -F document=@"$ALARM_VIDEO_DIR/etuovi.jpg" "https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendDocument"
-        rm "$ALARM_VIDEO_DIR/etuovi.jpg"
+        echo -e "\n"$(date)" Publishing new alarm video"
 
         aws  --profile alarm-video-s3 s3 cp "$FILE1" "$TARGET_S3_URL1"
         aws  --profile alarm-video-s3 s3 cp "$FILE2" "$TARGET_S3_URL2"
