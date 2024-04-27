@@ -32,10 +32,12 @@ check_reset_interval() {
 do_work() {
     if ! [ -e "$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
         echo $(date) Creating alarm
+        # Make a snapshot photo, which will be sent to Telegram as is
+        curl --silent --insecure "https://etuovi.home/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=$ENV_CAMERA_USERNAME_ETUOVI&password=$ENV_CAMERA_PASSWORD_ETUOVI" -o "$ALARM_VIDEO_DIR/etuovi-tmp.jpg"
+        mv "$ALARM_VIDEO_DIR/etuovi-tmp.jpg" "$ALARM_VIDEO_DIR/etuovi.jpg" # this is needed to make sure that unfinished photo is not uploaded
+        sleep 5 # allow some time for video capture of the latest event
         # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
         latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "out*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
-        # Make a snapshot photo, which will be sent to Telegram as is
-        curl --silent --insecure "https://etuovi.home/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=$ENV_CAMERA_USERNAME_ETUOVI&password=$ENV_CAMERA_PASSWORD_ETUOVI" -o "$ALARM_VIDEO_DIR/etuovi.jpg"
         # sleep a while to get complete video files
         sleep 10
         cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
