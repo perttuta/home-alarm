@@ -55,14 +55,28 @@ do_work_throttled() {
 }
 
 LAST_RESET_TIME=$(date +%s)
+MOSQUITTO_PID=a
+
+handle_sig() {
+    echo Gracefull shutdown. Killing also Mosquitto pid $MOSQUITTO_PID
+    kill $MOSQUITTO_PID
+    exit 0
+}
+
+trap 'handle_sig' EXIT
+
+mkfifo mosquitto_pipe
 
 while true  # Keep an infinite loop to reconnect when connection lost/broker unavailable
 do
-    mosquitto_sub -h mqtt.home -u $ENV_MQTT_USERNAME -P $ENV_MQTT_PASSWORD -t etuovi-person | while read -r payload
+    mosquitto_sub -h mqtt.home -u $ENV_MQTT_USERNAME -P $ENV_MQTT_PASSWORD -t etuovi-person > mosquitto_pipe &
+    MOSQUITTO_PID=$!
+
+    while read -r payload
     do
         echo $(date) Processing received message
         check_reset_interval
         do_work_throttled
-    done
+    done < mosquitto_pipe
     sleep 10  # Wait 10 seconds until reconnection
 done
