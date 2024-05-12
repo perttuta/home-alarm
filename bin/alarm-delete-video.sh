@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Specify the directory path
-directory="/var/cache/alarm-video"
+source /usr/bin/alarm-util.sh
+set -a; source "${ENV_FILE}"; set +a
 
+log("Setting up old file removal")
 while true; do
   # Find files older than 10 minutes and delete them
-  find "$directory" -type f -mmin +10 -exec rm -f {} \;
+  find "$ALARM_VIDEO_DIR" -type f -mmin +10 -exec rm -f {} \;
   sleep 600
 done

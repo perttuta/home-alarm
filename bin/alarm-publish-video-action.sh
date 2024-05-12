@@ -1,8 +1,8 @@
 #!/bin/bash
 
-ALARM_VIDEO_DIR=/var/cache/alarm-video
-FILE_NAME_ALARM=current-alarm
-FILE_EXTENSION_ALARM=.mp4
+source /usr/bin/alarm-util.sh
+# shellcheck source=../template.env
+set -a; source "${ENV_FILE}"; set +a
 
 FILE1="$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
 FILE2="$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
@@ -10,11 +10,11 @@ FILE2="$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
 while true
 do
     if [ -e "$FILE1" ]; then # if first alarm file is found, do work
-        echo -e "\n"$(date)" Publishing new alarm video"
+        log("Publishing new alarm video")
 
         TARGET_FILE_PREFIX=$(date "+%Y-%m-%d-%H-%M-%S")
-        TARGET_S3_URL1="s3://halyvideo/etuovi/$TARGET_FILE_PREFIX-1$FILE_EXTENSION_ALARM"
-        TARGET_S3_URL2="s3://halyvideo/etuovi/$TARGET_FILE_PREFIX-2$FILE_EXTENSION_ALARM"
+        TARGET_S3_URL1="s3://${S3_BUCKET}/${ENV}/$TARGET_FILE_PREFIX-1$FILE_EXTENSION_ALARM"
+        TARGET_S3_URL2="s3://${S3_BUCKET}/${ENV}/$TARGET_FILE_PREFIX-2$FILE_EXTENSION_ALARM"
 
         aws  --profile alarm-video-s3 s3 cp "$FILE1" "$TARGET_S3_URL1"
         aws  --profile alarm-video-s3 s3 cp "$FILE2" "$TARGET_S3_URL2"
