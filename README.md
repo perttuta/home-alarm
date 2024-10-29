@@ -3,6 +3,12 @@
 
 ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification. Works with Reolink-820A.
 
+# Deployment
+
+1. Create new env
+2. Clone the home-alarm repository
+3. Run `deploy/deploy.sh` in project root (all the references are relative to project root) 
+
 # Basic supervisor usage
 
 ## Status
