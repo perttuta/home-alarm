@@ -8,6 +8,11 @@ apt update
 apt install -y curl supervisor ffmpeg mosquitto-clients jq git
 timedatectl set-timezone "Europe/Helsinki"
 
+# Create directories
+echo Creating directories
+# TODO: Assuming here that the default directory is actually used. This is bad, because it would be better to read it from configuration
+mkdir /var/cache/alarm-video
+
 # Copy scripts
 echo Copying files
 cp bin/alarm-util.sh /usr/bin
