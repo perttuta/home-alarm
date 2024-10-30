@@ -10,7 +10,7 @@ FILE2="$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
 while true
 do
     if [ -e "$FILE1" ]; then # if first alarm file is found, do work
-        log("Publishing new alarm video")
+        log "Publishing new alarm video"
 
         TARGET_FILE_PREFIX=$(date "+%Y-%m-%d-%H-%M-%S")
         TARGET_S3_URL1="s3://${S3_BUCKET}/${ENV}/$TARGET_FILE_PREFIX-1$FILE_EXTENSION_ALARM"

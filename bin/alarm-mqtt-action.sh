@@ -32,7 +32,7 @@ check_reset_interval() {
 
 do_work() {
     if ! [ -e "$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
-        log("Creating alarm")
+        log "Creating alarm"
         # Make a snapshot photo, which will be sent to Telegram as is
         curl --silent --insecure "https://${CAMERA_HOST}/cgi-bin/api.cgi?cmd=Snap&channel=0&rs=sdaf&user=${ENV_CAMERA_USERNAME}&password=${ENV_CAMERA_PASSWORD}" -o "${FILE_PHOTO}.tmp"
         mv "${FILE_PHOTO}.tmp" "${FILE_PHOTO}" # this is needed to make sure that unfinished photo is not uploaded
@@ -59,7 +59,7 @@ LAST_RESET_TIME=$(date +%s)
 MOSQUITTO_PID=a
 
 handle_sig() {
-    log("Graceful shutdown. Killing also Mosquitto pid ${MOSQUITTO_PID}")
+    log "Graceful shutdown. Killing also Mosquitto pid ${MOSQUITTO_PID}"
     kill $MOSQUITTO_PID
     exit 0
 }
@@ -75,7 +75,7 @@ do
 
     while read -r payload
     do
-        log("Processing received message")
+        log "Processing received message"
         check_reset_interval
         do_work_throttled
     done < mosquitto_pipe
