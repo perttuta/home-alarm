@@ -10,7 +10,7 @@ timedatectl set-timezone "Europe/Helsinki"
 
 # Copy scripts
 cp bin/alarm-util.sh /usr/bin
-cp bin/alarm-delete.video.sh /usr/bin
+cp bin/alarm-delete-video.sh /usr/bin
 cp bin/alarm-mqtt-action.sh /usr/bin
 cp bin/alarm-publish-photo-action.sh /usr/bin
 cp bin/alarm-publish-video-action.sh /usr/bin
