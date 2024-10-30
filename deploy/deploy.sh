@@ -22,6 +22,8 @@ cp bin/alarm-publish-photo-action.sh /usr/bin
 cp bin/alarm-publish-video-action.sh /usr/bin
 cp bin/alarm-record-video.sh /usr/bin
 
+chmod ugo+x /usr/bin/alarm-*.sh
+
 # Configure supervisor
 echo Configuring supervisor
 cp supervisor/alarm-delete-video.conf /etc/supervisor/conf.d
