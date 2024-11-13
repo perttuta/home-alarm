@@ -8,7 +8,12 @@ ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification
 1. Create new env
 2. Clone the home-alarm repository
 3. Copy env template to /root/alarm.env and fill in missing values
-4. Run `deploy/deploy.sh` in project root (all the references are relative to project root)
+4. Deploy CDK project
+   1. cd cdk/alarm-video
+   2. npx cdk deploy
+5. Create /root/.aws/credentials file with profile `alarm-video-s3`
+   1. Use the user that CDK deployment creates
+6. Run `deploy/deploy.sh` in project root (all the references are relative to project root)
 
 # Basic supervisor usage
 

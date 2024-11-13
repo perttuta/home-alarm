@@ -5,7 +5,7 @@ set -e
 
 # Install packages
 apt update
-apt install -y curl supervisor ffmpeg mosquitto-clients jq git
+apt install -y curl supervisor ffmpeg mosquitto-clients jq git awscli
 timedatectl set-timezone "Europe/Helsinki"
 
 # Create directories
