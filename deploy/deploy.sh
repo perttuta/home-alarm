@@ -33,6 +33,7 @@ cp supervisor/alarm-extract-video.conf /etc/supervisor/conf.d
 cp supervisor/alarm-publish-photo.conf /etc/supervisor/conf.d
 
 # Add environment, which points to file consisting of all needed env configs. This should be done only once!
+# TODO: assuming that the configuration file is in /root/alarm.env. Should be configurable
 grep -q "environment=" /etc/supervisor/supervisord.conf ||  sed -i -e "s#\[supervisord\]#\[supervisord\]\nenvironment=ENV_FILE=/root/alarm.env#" /etc/supervisor/supervisord.conf
 
 echo All done!
