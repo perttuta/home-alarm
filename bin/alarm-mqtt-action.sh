@@ -38,13 +38,29 @@ do_work() {
         # Make a snapshot photo, which will be sent to Telegram as is
         curl --silent --insecure "${CAMERA_SNAPSHOT_URL}" -o "${FILE_PHOTO}.tmp"
         mv "${FILE_PHOTO}.tmp" "${FILE_PHOTO}" # this is needed to make sure that unfinished photo is not uploaded
-        sleep 5 # allow some time for video capture of the latest event
-        # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
-        latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "${ALARM_VIDEO_FILE_PREFIX}*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
-        # sleep a while to get complete video files
-        sleep 10
-        cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
-        cp "${latest_files[1]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
+
+        RECORDING_MODE="${RECORDING_MODE:-continuous}"
+
+        if [ "$RECORDING_MODE" = "on-demand" ]; then
+            # On-demand mode: start ffmpeg directly for 10 seconds
+            ON_DEMAND_DURATION="${ON_DEMAND_DURATION:-10}"
+            log "Starting on-demand recording for ${ON_DEMAND_DURATION}s"
+
+            /usr/bin/ffmpeg -loglevel error -i rtsp://${CAMERA_USERNAME}:${CAMERA_PASSWORD}@${CAMERA_RTSP_URL} -an -c:v copy -t "$ON_DEMAND_DURATION" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1-tmp$FILE_EXTENSION_ALARM"
+
+            # Move temp file to final location
+            mv "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1-tmp$FILE_EXTENSION_ALARM" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
+            log "On-demand recording completed"
+        else
+            # Continuous mode: copy from existing segments
+            sleep 5 # allow some time for video capture of the latest event
+            # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
+            latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "${ALARM_VIDEO_FILE_PREFIX}*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
+            # sleep a while to get complete video files
+            sleep 10
+            cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
+            cp "${latest_files[1]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
+        fi
     fi
 }
 

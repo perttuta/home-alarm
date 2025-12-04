@@ -3,6 +3,26 @@
 
 ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification. Works with Reolink-820A.
 
+## Recording Modes
+
+The system supports two recording modes:
+
+### Continuous Mode (default)
+- ffmpeg runs continuously in the background, creating 10-second video segments
+- When an alarm triggers, the two most recent segments are copied and uploaded
+- Higher resource usage (disk I/O, storage, CPU) but captures events that just occurred
+
+### On-Demand Mode
+- ffmpeg only starts when an alarm is triggered
+- Records for 10 seconds (configurable) starting from the alarm event
+- Lower resource usage when no alarms occur
+- Only one video file is created per alarm
+
+Configure via `RECORDING_MODE` in your environment file:
+- `RECORDING_MODE=continuous` (default)
+- `RECORDING_MODE=on-demand`
+- `ON_DEMAND_DURATION=10` (seconds, only used in on-demand mode)
+
 # Deployment
 
 1. Create new env
