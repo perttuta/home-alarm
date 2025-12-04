@@ -24,8 +24,8 @@ do
         ESCAPED_URL1=$(echo -n "$SIGNED_URL1" | jq -s -R -r @uri)
         ESCAPED_URL2=$(echo -n "$SIGNED_URL2" | jq -s -R -r @uri)
 
-        curl --silent "https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$ESCAPED_URL1"
-        curl --silent "https://api.telegram.org/bot$ENV_TG_BOT_TOKEN/sendMessage?chat_id=$ENV_TG_CHAT_ID&text=$ESCAPED_URL2"
+        curl --silent "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage?chat_id=$TG_CHAT_ID&text=$ESCAPED_URL1"
+        curl --silent "https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage?chat_id=$TG_CHAT_ID&text=$ESCAPED_URL2"
 
         rm "$FILE1"
         rm "$FILE2"

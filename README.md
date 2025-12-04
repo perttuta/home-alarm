@@ -17,6 +17,9 @@ ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification
 
 # Basic supervisor usage
 
+If supervisord is not running, you can start it with something like
+`systemctl start supervisor.service`
+
 ## Status
 
 `supervisorctl status`
