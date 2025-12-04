@@ -33,6 +33,8 @@ check_reset_interval() {
 do_work() {
     if ! [ -e "$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
         log "Creating alarm"
+        # Wait before taking snapshot (configurable delay)
+        sleep "${SNAPSHOT_DELAY:-0}"
         # Make a snapshot photo, which will be sent to Telegram as is
         curl --silent --insecure "${CAMERA_SNAPSHOT_URL}" -o "${FILE_PHOTO}.tmp"
         mv "${FILE_PHOTO}.tmp" "${FILE_PHOTO}" # this is needed to make sure that unfinished photo is not uploaded
