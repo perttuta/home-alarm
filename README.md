@@ -47,7 +47,7 @@ All processes
 `supervisorctl restart all`
 
 Single process
-`supervisorctl restart alarm-extract-video`
+`supervisorctl restart alarm-mqtt-action`
 
 ## Stopping services
 

@@ -29,7 +29,7 @@ echo Configuring supervisor
 cp supervisor/alarm-delete-video.conf /etc/supervisor/conf.d
 cp supervisor/alarm-record-video.conf /etc/supervisor/conf.d
 cp supervisor/alarm-publish-video.conf /etc/supervisor/conf.d
-cp supervisor/alarm-extract-video.conf /etc/supervisor/conf.d
+cp supervisor/alarm-mqtt-action.conf /etc/supervisor/conf.d
 cp supervisor/alarm-publish-photo.conf /etc/supervisor/conf.d
 
 # Add environment, which points to file consisting of all needed env configs. This should be done only once!
