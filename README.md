@@ -22,6 +22,26 @@ Configure via `RECORDING_MODE` in your environment file:
 - `RECORDING_MODE=continuous` (default)
 - `RECORDING_MODE=on-demand`
 - `ON_DEMAND_DURATION=10` (seconds, only used in on-demand mode)
+- `SEGMENT_TIME=10` (segment length in seconds, continuous mode)
+- `STALL_TIMEOUT=60` (restart ffmpeg if no new segment appears within this many seconds)
+
+## Continuous Recording Health
+
+supervisord only sees the recorder wrapper, so it cannot detect an ffmpeg that
+is still alive but no longer producing video (for example a stalled RTSP
+stream). The wrapper therefore watches its own output: a new segment file is
+written every `SEGMENT_TIME` seconds, and if the newest segment is older than
+`STALL_TIMEOUT`, ffmpeg is stopped (TERM, then KILL) and restarted. Restarts are
+logged to `/var/log/alarm-record-video.out.log`.
+
+The wrapper also:
+- runs ffmpeg in its own process group, so `supervisorctl stop` tears down
+  both (via `stopasgroup`/`killasgroup`);
+- reaps its ffmpeg child on exit (including crashes) with a `trap`;
+- holds a singleton lock (`/run/alarm-record-video.lock`), so a second recorder
+  refuses to start;
+- kills any stray ffmpeg matching its output pattern on startup, as a safety
+  net against leaked processes.
 
 # Deployment
 
