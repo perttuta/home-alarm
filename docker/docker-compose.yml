@@ -1,0 +1,69 @@
+services:
+  home-alarm:
+    image: home-alarm:test
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: home-alarm
+    volumes:
+      - alarm-video-cache:/var/cache/alarm-video
+      - ./supervisor-test:/etc/supervisor/conf.d
+      - ./test.env:/etc/alarm-camera.env:ro
+    environment:
+      ENV_FILE: /etc/alarm-camera.env
+    depends_on:
+      broker:
+        condition: service_started
+      s3:
+        condition: service_started
+      s3-init:
+        condition: service_completed_successfully
+      mock:
+        condition: service_started
+    restart: unless-stopped
+
+  broker:
+    image: eclipse-mosquitto:2
+    container_name: home-alarm-mqtt
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    ports:
+      - "1883:1883"
+
+  s3:
+    image: zenko/cloudserver:latest
+    container_name: home-alarm-s3
+    environment:
+      S3BACKEND: mem
+      REMOTE_MANAGEMENT_DISABLE: 1
+      SCALITY_ACCESS_KEY_ID: minioadmin
+      SCALITY_SECRET_ACCESS_KEY: minioadmin
+      ENDPOINT: s3
+    ports:
+      - "8000:8000"
+
+  s3-init:
+    image: home-alarm:test
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        until aws --endpoint-url http://s3:8000 --region eu-west-1 s3 ls 2>/dev/null;
+        do echo "waiting for S3..."; sleep 2; done;
+        aws --endpoint-url http://s3:8000 --region eu-west-1 s3 mb s3://halyvideo 2>/dev/null || true
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    depends_on:
+      s3:
+        condition: service_started
+
+  mock:
+    build:
+      context: ./mock
+      dockerfile: Dockerfile
+    container_name: home-alarm-mock
+    ports:
+      - "8080:8080"
+
+volumes:
+  alarm-video-cache:
