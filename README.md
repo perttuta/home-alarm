@@ -9,7 +9,12 @@ The system supports two recording modes:
 
 ### Continuous Mode (default)
 - ffmpeg runs continuously in the background, creating 10-second video segments
-- When an alarm triggers, the two most recent segments are copied and uploaded
+- When an alarm triggers, the segment that contains the snapshot is copied and
+  uploaded, together with the preceding segment (about 10s before) and, when
+  available, the following segment (about 10s after)
+- Only finalized segments are copied (a segment becomes a playable mp4 once
+  ffmpeg has closed it), so the uploaded videos always show the snapshot moment
+  and are never corrupt
 - Higher resource usage (disk I/O, storage, CPU) but captures events that just occurred
 
 ### On-Demand Mode

@@ -22,8 +22,8 @@ New `docker/` directory:
 - `entrypoint.sh`         - sources the env file, writes `~/.aws` profile used by
                             the S3 scripts, then starts supervisord
 - `supervisor-test/`      - supervisor programs for the test container; the
-                            `alarm-record-video` recorder is disabled (no RTSP
-                            camera)
+                            `alarm-record-video` recorder is enabled and records
+                            the fake RTSP stream continuously
 - `test/run-test.sh`      - smoke test: seeds fake video segments, publishes an
                             MQTT motion event, asserts snapshot + Telegram photo
                             + S3 upload/signed URLs
@@ -61,7 +61,7 @@ checks:
 
 - camera snapshot requested (mock)
 - snapshot photo sent to Telegram (mock)
-- both alarm videos uploaded to S3 and signed URLs sent to Telegram (mock)
+- alarm videos uploaded to S3 and signed URLs sent to Telegram (mock)
 
 ## How to use
 

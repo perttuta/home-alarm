@@ -20,6 +20,30 @@ services:
         condition: service_completed_successfully
       mock:
         condition: service_started
+      rtsp:
+        condition: service_started
+    restart: unless-stopped
+
+  # RTSP server (MediaMTX) that serves the fake camera stream the recorder reads.
+  rtsp:
+    image: bluenviron/mediamtx:latest
+    container_name: home-alarm-rtsp
+
+  # Publishes a test H264 stream (with a burn-in timestamp) to the RTSP server,
+  # so the recorder has something to record in continuous mode.
+  streamer:
+    image: home-alarm:test
+    container_name: home-alarm-streamer
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        until ffmpeg -loglevel error -re -f lavfi
+        -i testsrc2=size=640x360:rate=30 -c:v libx264 -g 60 -sc_threshold 0
+        -pix_fmt yuv420p -f rtsp -rtsp_transport tcp rtsp://rtsp:8554/stream;
+        do sleep 2; done
+    depends_on:
+      rtsp:
+        condition: service_started
     restart: unless-stopped
 
   broker:

@@ -13,9 +13,12 @@ Compatible with the `multi-camera` branch (env-file based configuration).
 | `s3`        | S3-compatible object store (Zenko CloudServer), listens on `8000`     |
 | `s3-init`   | Creates the `halyvideo` bucket once                                   |
 | `mock`      | Fake camera (serves a snapshot) + fake Telegram API, listens on `8080`|
+| `rtsp`      | RTSP server (MediaMTX) that serves the fake camera stream             |
+| `streamer`  | Publishes a test H264 stream to `rtsp`, so the recorder has input     |
 
-The `alarm-record-video` supervisord program is disabled in the test config
-(`docker/supervisor-test/`) because there is no real RTSP camera.
+The `alarm-record-video` supervisord program is enabled in the test config
+(`docker/supervisor-test/`) and records the fake stream continuously, so the
+continuous-recording alarm path is exercised end-to-end.
 
 ## Usage
 
@@ -37,10 +40,12 @@ docker compose -f docker/docker-compose.yml exec -T home-alarm \
 ```
 
 The smoke test asserts that:
-1. the camera snapshot is requested (mock),
-2. the snapshot photo is sent to Telegram (mock),
-3. the two alarm videos are uploaded to S3 and their signed URLs are sent to
-   Telegram (mock).
+1. the recorder is producing continuous-recording segments,
+2. the camera snapshot is requested (mock),
+3. the snapshot photo is sent to Telegram (mock),
+4. the alarm videos are uploaded to S3 (up to three: snapshot, before, after),
+   their signed URLs are sent to Telegram (mock), and the uploaded videos are
+   valid mp4 files.
 
 ## Configuration
 

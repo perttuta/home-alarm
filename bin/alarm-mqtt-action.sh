@@ -4,6 +4,9 @@ source /usr/bin/alarm-util.sh
 # shellcheck source=../template.env
 set -a; source "${ENV_FILE}"; set +a
 
+# Length of each continuous segment in seconds (must match the recorder).
+SEGMENT_TIME="${SEGMENT_TIME:-10}"
+
 # initial delay in seconds
 INITIAL_DELAY=$((60 * 1)) # 1 min
 
@@ -30,12 +33,54 @@ check_reset_interval() {
     fi
 }
 
+# List the finalized recording segments, oldest first, one "mtime path" per
+# line. The recorder (alarm-record-video.sh) writes these files; a segment's
+# mtime is the wall-clock time ffmpeg finished it.
+list_segments() {
+    find "$ALARM_VIDEO_DIR" -maxdepth 1 -type f \
+        -name "${ALARM_VIDEO_FILE_PREFIX}*.mp4" -printf '%T@ %p\n' 2>/dev/null | sort -n
+}
+
+# Wait (bounded) until a finalized segment ends at or after $1 (epoch seconds).
+# A segment file only becomes a valid, playable mp4 once ffmpeg has closed it
+# (the moov atom is written at close), so we must not copy a still-open one.
+# The newest file in the directory is the segment ffmpeg is currently writing,
+# so we look at the newest *closed* segment (the one just before it).
+#
+# With `-c:v copy` a segment only ends at a keyframe, so it can be longer than
+# SEGMENT_TIME when the camera's keyframe interval is large. The wait is
+# therefore generous (2*SEGMENT_TIME + 10), but still shorter than the
+# recorder's stall timeout, so a dead stream cannot block alarms forever.
+wait_for_segment_after() {
+    local target="$1" waited=0 limit=$((2 * SEGMENT_TIME + 10)) lines newest
+    while [ "$waited" -lt "$limit" ]; do
+        lines=$(list_segments)
+        if [ -n "$lines" ]; then
+            newest=$(printf '%s\n' "$lines" | sed '$d' | tail -n 1 | cut -d' ' -f1)
+            if [ -n "$newest" ] && [ "${newest%.*}" -ge "$target" ]; then
+                return 0
+            fi
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    return 1
+}
+
+# Copy a source segment to an alarm file atomically (temp + mv), so the video
+# publisher never observes a partially-written file.
+copy_alarm_segment() {
+    local src="$1" dst="$2"
+    cp "$src" "${dst}.tmp" && mv "${dst}.tmp" "$dst"
+}
+
 do_work() {
-    if ! [ -e "$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
+    if ! [ -e "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM" ]; then # delay next execution only if no file is being processed at the moment
         log "Creating alarm"
         # Wait before taking snapshot (configurable delay)
         sleep "${SNAPSHOT_DELAY:-0}"
         # Make a snapshot photo, which will be sent to Telegram as is
+        SNAPSHOT_TS=$(date +%s)
         curl --silent --insecure "${CAMERA_SNAPSHOT_URL}" -o "${FILE_PHOTO}.tmp"
         mv "${FILE_PHOTO}.tmp" "${FILE_PHOTO}" # this is needed to make sure that unfinished photo is not uploaded
 
@@ -52,14 +97,56 @@ do_work() {
             mv "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1-tmp$FILE_EXTENSION_ALARM" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
             log "On-demand recording completed"
         else
-            # Continuous mode: copy from existing segments
-            sleep 5 # allow some time for video capture of the latest event
-            # two latest files from recordings (only the files ffmpeg is creating, skip alarm files being processed)
-            latest_files=($(find $ALARM_VIDEO_DIR -maxdepth 1 -type f -name "${ALARM_VIDEO_FILE_PREFIX}*.mp4" -printf "%T@ %p\n" | sort -n | tail -2 | cut -d' ' -f2))
-            # sleep a while to get complete video files
-            sleep 10
-            cp "${latest_files[0]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
-            cp "${latest_files[1]}" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
+            # Continuous mode: copy the finalized recording segments around the
+            # snapshot moment (SNAPSHOT_TS was captured right before the
+            # snapshot was taken).
+            #
+            # A segment file is only a valid, playable mp4 once ffmpeg has
+            # closed it (the moov atom is written at close). Copying the segment
+            # ffmpeg is still writing yields a corrupt file, so we first wait for
+            # the segment that contains the snapshot to be finalized.
+            if ! wait_for_segment_after "$SNAPSHOT_TS"; then
+                log "No finalized recording segment for the snapshot; skipping video"
+                return
+            fi
+
+            mapfile -t segs < <(list_segments)
+
+            # The segment that contains the snapshot is the first one that ends
+            # at or after the snapshot time.
+            idx=-1
+            for i in "${!segs[@]}"; do
+                end=${segs[$i]%% *}
+                if [ "${end%.*}" -ge "$SNAPSHOT_TS" ]; then
+                    idx=$i
+                    break
+                fi
+            done
+            [ "$idx" -lt 0 ] && idx=$(( ${#segs[@]} - 1 ))
+
+            snapshot_seg="${segs[$idx]#* }"
+            snapshot_end=${segs[$idx]%% *}
+
+            # File 1 always holds the segment that shows the snapshot moment.
+            copy_alarm_segment "$snapshot_seg" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
+
+            # File 2 holds the preceding segment (about 10s before the snapshot).
+            if [ "$idx" -gt 0 ]; then
+                copy_alarm_segment "${segs[$((idx - 1))]#* }" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
+            fi
+
+            # Best-effort: file 3 holds the following segment (about 10s after
+            # the snapshot), copied once ffmpeg has finalized it.
+            if wait_for_segment_after "$(( ${snapshot_end%.*} + 1 ))"; then
+                mapfile -t segs2 < <(list_segments)
+                for s in "${segs2[@]}"; do
+                    end=${s%% *}
+                    if [ "${end%.*}" -gt "${snapshot_end%.*}" ]; then
+                        copy_alarm_segment "${s#* }" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3$FILE_EXTENSION_ALARM"
+                        break
+                    fi
+                done
+            fi
         fi
     fi
 }
