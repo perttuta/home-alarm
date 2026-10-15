@@ -8,14 +8,19 @@ ONVIF (HomeAssistant) / MQTT / S3 alarm video storage with Telegram notification
 The system supports two recording modes:
 
 ### Continuous Mode (default)
-- ffmpeg runs continuously in the background, creating 10-second video segments
+- ffmpeg runs continuously in the background, recording the camera's fluent
+  (sub) stream in 10-second segments
 - When an alarm triggers, the segment that contains the snapshot is copied and
-  uploaded, together with the preceding segment (about 10s before) and, when
-  available, the following segment (about 10s after)
+  uploaded together with the preceding segment (about 10s before), and a short
+  4K clip is recorded from the main (clear) stream (about 10s after the
+  detection). The fluent segments show what happened before the detection and
+  the 4K clip shows what happened after it.
 - Only finalized segments are copied (a segment becomes a playable mp4 once
   ffmpeg has closed it), so the uploaded videos always show the snapshot moment
   and are never corrupt
-- Higher resource usage (disk I/O, storage, CPU) but captures events that just occurred
+- The fluent stream is much smaller than the 4K stream, so continuous recording
+  uses far less disk and bandwidth, while the important 4K clip is only
+  recorded on alarm
 
 ### On-Demand Mode
 - ffmpeg only starts when an alarm is triggered
@@ -26,7 +31,10 @@ The system supports two recording modes:
 Configure via `RECORDING_MODE` in your environment file:
 - `RECORDING_MODE=continuous` (default)
 - `RECORDING_MODE=on-demand`
+- `CAMERA_RTSP_URL` (main / 4K clear stream; used for the on-alarm 4K clip)
+- `CAMERA_RTSP_FLUENT_URL` (fluent / sub stream; used for continuous recording, falls back to `CAMERA_RTSP_URL`)
 - `ON_DEMAND_DURATION=10` (seconds, only used in on-demand mode)
+- `CLIP_DURATION=10` (seconds of the 4K clip recorded on alarm, continuous mode)
 - `SEGMENT_TIME=10` (segment length in seconds, continuous mode)
 - `STALL_TIMEOUT=60` (restart ffmpeg if no new segment appears within this many seconds)
 

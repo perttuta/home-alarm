@@ -10,6 +10,9 @@ RECORDING_MODE="${RECORDING_MODE:-continuous}"
 SEGMENT_TIME="${SEGMENT_TIME:-10}"
 # Restart ffmpeg if no new segment appears within this many seconds
 STALL_TIMEOUT="${STALL_TIMEOUT:-60}"
+# The continuous recording uses the fluent (sub) stream. Fall back to the main
+# stream URL when no separate fluent URL is configured.
+RTSP_URL="${CAMERA_RTSP_FLUENT_URL:-$CAMERA_RTSP_URL}"
 
 if [ "$RECORDING_MODE" != "continuous" ]; then
     log "On-demand recording mode - service not needed"
@@ -45,7 +48,7 @@ start_ffmpeg() {
     # fd 9 (the singleton lock) is closed for ffmpeg, so the lock is tied to
     # this wrapper only and is released as soon as the wrapper exits.
     /usr/bin/ffmpeg -loglevel error \
-      -i "rtsp://${CAMERA_USERNAME}:${CAMERA_PASSWORD}@${CAMERA_RTSP_URL}" \
+      -i "rtsp://${CAMERA_USERNAME}:${CAMERA_PASSWORD}@${RTSP_URL}" \
       -an -c:v copy -map 0 -f segment -segment_time "$SEGMENT_TIME" \
       -segment_format mp4 \
       "${ALARM_VIDEO_DIR}/${ALARM_VIDEO_FILE_PREFIX}%04d.mp4" 9>&- &

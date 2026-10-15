@@ -97,16 +97,27 @@ do_work() {
             mv "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1-tmp$FILE_EXTENSION_ALARM" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
             log "On-demand recording completed"
         else
-            # Continuous mode: copy the finalized recording segments around the
-            # snapshot moment (SNAPSHOT_TS was captured right before the
-            # snapshot was taken).
-            #
+            # Continuous mode: the recorder continuously saves the fluent (sub)
+            # stream in short segments, which show what happened before the
+            # detection. Start a short 4K (main-stream) clip right away so it
+            # captures what happens after the detection, then copy the finalized
+            # fluent segments around the snapshot moment.
+            CLIP_DURATION="${CLIP_DURATION:-10}"
+            log "Starting ${CLIP_DURATION}s 4K clip"
+            /usr/bin/ffmpeg -loglevel error \
+              -i "rtsp://${CAMERA_USERNAME}:${CAMERA_PASSWORD}@${CAMERA_RTSP_URL}" \
+              -an -c:v copy -t "$CLIP_DURATION" \
+              "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3-tmp$FILE_EXTENSION_ALARM" &
+            CLIP_PID=$!
+
             # A segment file is only a valid, playable mp4 once ffmpeg has
             # closed it (the moov atom is written at close). Copying the segment
             # ffmpeg is still writing yields a corrupt file, so we first wait for
             # the segment that contains the snapshot to be finalized.
             if ! wait_for_segment_after "$SNAPSHOT_TS"; then
                 log "No finalized recording segment for the snapshot; skipping video"
+                wait "$CLIP_PID"
+                rm -f "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3-tmp$FILE_EXTENSION_ALARM"
                 return
             fi
 
@@ -125,7 +136,6 @@ do_work() {
             [ "$idx" -lt 0 ] && idx=$(( ${#segs[@]} - 1 ))
 
             snapshot_seg="${segs[$idx]#* }"
-            snapshot_end=${segs[$idx]%% *}
 
             # File 1 always holds the segment that shows the snapshot moment.
             copy_alarm_segment "$snapshot_seg" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-1$FILE_EXTENSION_ALARM"
@@ -135,18 +145,11 @@ do_work() {
                 copy_alarm_segment "${segs[$((idx - 1))]#* }" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-2$FILE_EXTENSION_ALARM"
             fi
 
-            # Best-effort: file 3 holds the following segment (about 10s after
-            # the snapshot), copied once ffmpeg has finalized it.
-            if wait_for_segment_after "$(( ${snapshot_end%.*} + 1 ))"; then
-                mapfile -t segs2 < <(list_segments)
-                for s in "${segs2[@]}"; do
-                    end=${s%% *}
-                    if [ "${end%.*}" -gt "${snapshot_end%.*}" ]; then
-                        copy_alarm_segment "${s#* }" "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3$FILE_EXTENSION_ALARM"
-                        break
-                    fi
-                done
-            fi
+            # File 3 holds the 4K clip recorded from the detection moment.
+            # Publish it once ffmpeg has finalized the file.
+            wait "$CLIP_PID"
+            mv "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3-tmp$FILE_EXTENSION_ALARM" \
+               "$ALARM_VIDEO_DIR/$FILE_NAME_ALARM-3$FILE_EXTENSION_ALARM"
         fi
     fi
 }

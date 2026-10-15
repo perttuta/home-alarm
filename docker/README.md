@@ -43,9 +43,9 @@ The smoke test asserts that:
 1. the recorder is producing continuous-recording segments,
 2. the camera snapshot is requested (mock),
 3. the snapshot photo is sent to Telegram (mock),
-4. the alarm videos are uploaded to S3 (up to three: snapshot, before, after),
-   their signed URLs are sent to Telegram (mock), and the uploaded videos are
-   valid mp4 files.
+4. the alarm videos are uploaded to S3 (up to three: snapshot segment, before
+   segment, and the after-the-detection 4K clip), their signed URLs are sent to
+   Telegram (mock), and the uploaded videos are valid mp4 files.
 
 ## Configuration
 
